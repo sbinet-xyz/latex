@@ -24,7 +24,7 @@ const (
 
 // FontConstants is a set of magical values that control how certain things,
 // such as sub- and superscripts are laid out.
-// These are all metrics that can't be reliably retreived from the font metrics
+// These are all metrics that can't be reliably retrieved from the font metrics
 // in the font itself.
 type FontConstants struct {
 	// Percentage of x-height of additional horiz. space after sub/superscripts

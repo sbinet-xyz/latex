@@ -19,7 +19,10 @@ func TestTex2Unicode(t *testing.T) {
 		{v: `0`, want: '0'},
 		{v: `0`, want: '0', math: true},
 		{v: `-`, want: '-'},
+		{v: `-`, want: '−', math: true},
 		{v: `\alpha`, want: 'α', math: true},
+		{v: `\aleph`, want: 'ℵ', math: true},
+		{v: `\flat`, want: '♭', math: true},
 		{v: `\Join`, want: '⨝', math: true},
 		{v: `\perp`, want: '⟂', math: true},
 		{v: `\pm`, want: '±', math: true},
@@ -37,7 +40,13 @@ func TestTex2Unicode(t *testing.T) {
 		{v: `\varsigma`, want: 'ς', math: true},
 		{v: `\Sigma`, want: 'Σ', math: true},
 		{v: `\sum`, want: '∑', math: true},
+		{v: `\Pi`, want: 'Π', math: true},
+		{v: `\pi`, want: 'π', math: true},
+		{v: `\nabla`, want: '∇', math: true},
 		{v: `\varepsilon`, want: 'ε', math: true},
+		{v: `\l`, want: 'ł', math: true},
+		{v: `\L`, want: 'Ł', math: true},
+		{v: `\ast`, want: '∗', math: true},
 	} {
 		t.Run(tc.v, func(t *testing.T) {
 			got := unicodeIndex(tc.v, tc.math)

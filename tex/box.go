@@ -12,14 +12,14 @@ import (
 )
 
 const (
-	// How much text shrinks when going to the next-smallest level.  GROW_FACTOR
-	// must be the inverse of SHRINK_FACTOR.
-	SHRINK_FACTOR = 0.7
-	GROW_FACTOR   = 1.0 / SHRINK_FACTOR
+	// How much text shrinks when going to the next-smallest level.  growFactor
+	// must be the inverse of shrinkFactor.
+	shrinkFactor = 0.7
+	growFactor   = 1.0 / shrinkFactor
 
 	// The number of different sizes of chars to use, beyond which they will not
 	// get any smaller
-	NUM_SIZE_LEVELS = 6
+	numSizeLevels = 6
 )
 
 // FontConstants is a set of magical values that control how certain things,
@@ -111,19 +111,19 @@ func (*Box) Kerning(next Node) float64 { return 0 }
 
 func (box *Box) Shrink() {
 	box.size--
-	if box.size >= NUM_SIZE_LEVELS {
+	if box.size >= numSizeLevels {
 		return
 	}
-	box.width *= SHRINK_FACTOR
-	box.height *= SHRINK_FACTOR
-	box.depth *= SHRINK_FACTOR
+	box.width *= shrinkFactor
+	box.height *= shrinkFactor
+	box.depth *= shrinkFactor
 }
 
 func (box *Box) Grow() {
 	box.size++
-	box.width *= GROW_FACTOR
-	box.height *= GROW_FACTOR
-	box.depth *= GROW_FACTOR
+	box.width *= growFactor
+	box.height *= growFactor
+	box.depth *= growFactor
 }
 
 func (*Box) Render(x, y float64) {}
@@ -214,21 +214,21 @@ func (c *Char) Kerning(next Node) float64 { panic("not implemented") }
 
 func (box *Char) Shrink() {
 	box.size--
-	if box.size >= NUM_SIZE_LEVELS {
+	if box.size >= numSizeLevels {
 		return
 	}
-	box.font.size *= SHRINK_FACTOR
-	box.width *= SHRINK_FACTOR
-	box.height *= SHRINK_FACTOR
-	box.depth *= SHRINK_FACTOR
+	box.font.size *= shrinkFactor
+	box.width *= shrinkFactor
+	box.height *= shrinkFactor
+	box.depth *= shrinkFactor
 }
 
 func (box *Char) Grow() {
 	box.size++
-	box.font.size *= GROW_FACTOR
-	box.width *= GROW_FACTOR
-	box.height *= GROW_FACTOR
-	box.depth *= GROW_FACTOR
+	box.font.size *= growFactor
+	box.width *= growFactor
+	box.height *= growFactor
+	box.depth *= growFactor
 }
 
 func (c Char) Render(x, y float64) { panic("not implemented") }
@@ -326,9 +326,9 @@ func (lst *List) Shrink() {
 		node.Shrink()
 	}
 	lst.box.Shrink()
-	if lst.box.size < NUM_SIZE_LEVELS {
-		lst.shift *= SHRINK_FACTOR
-		lst.glue.set *= SHRINK_FACTOR
+	if lst.box.size < numSizeLevels {
+		lst.shift *= shrinkFactor
+		lst.glue.set *= shrinkFactor
 	}
 }
 
@@ -337,8 +337,8 @@ func (lst *List) Grow() {
 		node.Grow()
 	}
 	lst.box.Grow()
-	lst.shift *= GROW_FACTOR
-	lst.glue.set *= GROW_FACTOR
+	lst.shift *= growFactor
+	lst.glue.set *= growFactor
 }
 
 func (lst *List) Render(x, y float64) {
@@ -709,15 +709,15 @@ func (g *Glue) Kerning(next Node) float64 { return 0 }
 
 func (g *Glue) Shrink() {
 	g.size--
-	if g.size >= NUM_SIZE_LEVELS {
+	if g.size >= numSizeLevels {
 		return
 	}
-	g.width *= SHRINK_FACTOR
+	g.width *= shrinkFactor
 }
 
 func (g *Glue) Grow() {
 	g.size++
-	g.width *= GROW_FACTOR
+	g.width *= growFactor
 }
 
 func (g *Glue) Render(x, y float64) {}
@@ -788,15 +788,15 @@ func (k *Kern) Kerning(next Node) float64 { return 0 }
 
 func (k *Kern) Shrink() {
 	k.size--
-	if k.size >= NUM_SIZE_LEVELS {
+	if k.size >= numSizeLevels {
 		return
 	}
-	k.width *= SHRINK_FACTOR
+	k.width *= shrinkFactor
 }
 
 func (k *Kern) Grow() {
 	k.size++
-	k.width *= GROW_FACTOR
+	k.width *= growFactor
 }
 
 func (k *Kern) Render(x, y float64) {}

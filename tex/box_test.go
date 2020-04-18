@@ -41,6 +41,31 @@ func TestBox(t *testing.T) {
 			h:    30,
 			d:    0,
 		},
+		{
+			node: HListOf([]Node{
+				VBox(10, 20), HBox(30),
+				HListOf([]Node{HBox(11), HBox(22)}, false),
+			}, false),
+			w: 63,
+			h: 10,
+			d: 20,
+		},
+		{
+			node: HListOf([]Node{
+				VBox(10, 20), HBox(30),
+				HListOf([]Node{HBox(11), HBox(22)}, false),
+				VListOf([]Node{HBox(15), VBox(11, 22)}),
+			}, false),
+			w: 78,
+			h: 11,
+			d: 22,
+		},
+		{
+			node: HListOf([]Node{VBox(10, 20), NewKern(15), HBox(30)}, true),
+			w:    45,
+			h:    10,
+			d:    20,
+		},
 	} {
 		t.Run("", func(t *testing.T) {
 			var (

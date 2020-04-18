@@ -71,13 +71,14 @@ func TestBox(t *testing.T) {
 				VBox(10, 20),
 				VListOf([]Node{
 					VBox(11, 22),
+					NewKern(10),
 					HBox(40),
 				}),
 				HListOf([]Node{VBox(10, 20), NewKern(15), HBox(30)}, true),
 				HBox(30),
 			}),
 			w: 45,
-			h: 93,
+			h: 103,
 			d: 0,
 		},
 	} {

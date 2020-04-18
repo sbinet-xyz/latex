@@ -111,12 +111,11 @@ func (*Box) Kerning(next Node) float64 { return 0 }
 
 func (box *Box) Shrink() {
 	box.size--
-	if box.size >= numSizeLevels {
-		return
+	if box.size < numSizeLevels {
+		box.width *= shrinkFactor
+		box.height *= shrinkFactor
+		box.depth *= shrinkFactor
 	}
-	box.width *= shrinkFactor
-	box.height *= shrinkFactor
-	box.depth *= shrinkFactor
 }
 
 func (box *Box) Grow() {
@@ -214,13 +213,12 @@ func (c *Char) Kerning(next Node) float64 { panic("not implemented") }
 
 func (box *Char) Shrink() {
 	box.size--
-	if box.size >= numSizeLevels {
-		return
+	if box.size < numSizeLevels {
+		box.font.size *= shrinkFactor
+		box.width *= shrinkFactor
+		box.height *= shrinkFactor
+		box.depth *= shrinkFactor
 	}
-	box.font.size *= shrinkFactor
-	box.width *= shrinkFactor
-	box.height *= shrinkFactor
-	box.depth *= shrinkFactor
 }
 
 func (box *Char) Grow() {
@@ -709,10 +707,9 @@ func (g *Glue) Kerning(next Node) float64 { return 0 }
 
 func (g *Glue) Shrink() {
 	g.size--
-	if g.size >= numSizeLevels {
-		return
+	if g.size < numSizeLevels {
+		g.width *= shrinkFactor
 	}
-	g.width *= shrinkFactor
 }
 
 func (g *Glue) Grow() {
@@ -788,10 +785,9 @@ func (k *Kern) Kerning(next Node) float64 { return 0 }
 
 func (k *Kern) Shrink() {
 	k.size--
-	if k.size >= numSizeLevels {
-		return
+	if k.size < numSizeLevels {
+		k.width *= shrinkFactor
 	}
-	k.width *= shrinkFactor
 }
 
 func (k *Kern) Grow() {

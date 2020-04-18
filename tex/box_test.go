@@ -23,18 +23,18 @@ func TestBox(t *testing.T) {
 			h:    10,
 			d:    20,
 		},
-		//		{
-		//			node: HListOf([]Node{VBox(10, 20), HBox(30)}, false),
-		//			w:    30,
-		//			h:    20,
-		//			d:    10,
-		//		},
-		//		{
-		//			node: HListOf([]Node{VBox(10, 20), HBox(30)}, true),
-		//			w:    30,
-		//			h:    20,
-		//			d:    10,
-		//		},
+		{
+			node: HListOf([]Node{VBox(10, 20), HBox(30)}, false),
+			w:    30,
+			h:    10,
+			d:    20,
+		},
+		{
+			node: HListOf([]Node{VBox(10, 20), HBox(30)}, true),
+			w:    30,
+			h:    10,
+			d:    20,
+		},
 		{
 			node: VListOf([]Node{VBox(10, 20), HBox(30)}),
 			w:    30,

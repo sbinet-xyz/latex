@@ -6,7 +6,6 @@ package tex
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"unicode/utf8"
 )
@@ -33,7 +32,6 @@ func unicodeIndex(v string, math bool) rune {
 		return r
 	}
 
-	log.Printf("---")
 	r, _ = utf8.DecodeRune([]byte(v))
 	if r != utf8.RuneError {
 		return r

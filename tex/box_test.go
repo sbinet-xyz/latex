@@ -111,6 +111,75 @@ func TestBox(t *testing.T) {
 		{
 			node: NewGlue("ss"),
 		},
+		{
+			node: VListOf([]Node{
+				NewKern(10),
+				VBox(10, 20),
+				NewKern(10),
+				VListOf([]Node{
+					NewKern(10),
+					VBox(11, 22),
+					NewKern(10),
+					HBox(40),
+					NewKern(10),
+				}),
+				NewKern(10),
+				HListOf([]Node{
+					NewKern(10), VBox(10, 20),
+					NewKern(15), HBox(30),
+					NewKern(10),
+				}, true),
+				NewKern(10),
+				HBox(30),
+				NewKern(10),
+			}),
+			w: 65,
+			h: 173,
+			d: 0,
+		},
+		{
+			node: VListOf([]Node{
+				NewKern(10),
+				VBox(10, 20),
+				NewGlue("fill"),
+				NewKern(10),
+				VListOf([]Node{
+					NewKern(10),
+					VBox(11, 22),
+					NewKern(10),
+					NewGlue("neg_fill"),
+					HBox(40),
+					NewKern(10),
+				}),
+				NewKern(10),
+				HListOf([]Node{
+					NewKern(10), VBox(10, 20),
+					NewGlue("empty"),
+					NewKern(15), HBox(30),
+					NewKern(10),
+				}, true),
+				NewKern(10),
+				NewGlue("ss"),
+				HBox(30),
+				NewKern(10),
+			}),
+			w: 65,
+			h: 173,
+			d: 0,
+		},
+		{
+			node: HListOf([]Node{
+				NewKern(10),
+				NewGlue("fil"),
+				VBox(10, 20), HBox(30),
+				NewGlue("fil"),
+				HListOf([]Node{HBox(11), NewGlue("filll"), HBox(22)}, true),
+				VListOf([]Node{HBox(15), NewGlue("neg_filll"), VBox(11, 22)}),
+			}, true),
+			w: 88,
+			h: 11,
+			d: 22,
+		},
 	} {
 		t.Run("", func(t *testing.T) {
 			var (

@@ -81,6 +81,12 @@ func TestBox(t *testing.T) {
 			h: 103,
 			d: 0,
 		},
+		{
+			node: NewKern(10),
+			w:    10,
+			h:    0,
+			d:    0,
+		},
 	} {
 		t.Run("", func(t *testing.T) {
 			var (

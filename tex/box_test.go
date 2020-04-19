@@ -180,6 +180,30 @@ func TestBox(t *testing.T) {
 			h: 11,
 			d: 22,
 		},
+		{
+			node: HCentered([]Node{
+				VBox(10, 20),
+				HBox(30),
+				NewKern(15),
+				HBox(40),
+				VBox(20, 10),
+			}),
+			w: 85,
+			h: 20,
+			d: 20,
+		},
+		{
+			node: VCentered([]Node{
+				VBox(10, 20),
+				HBox(30),
+				NewKern(15),
+				HBox(40),
+				VBox(20, 10),
+			}),
+			w: 40,
+			h: 75,
+			d: 0,
+		},
 	} {
 		t.Run("", func(t *testing.T) {
 			var (

@@ -87,6 +87,30 @@ func TestBox(t *testing.T) {
 			h:    0,
 			d:    0,
 		},
+		{
+			node: NewGlue("fil"),
+		},
+		{
+			node: NewGlue("fill"),
+		},
+		{
+			node: NewGlue("filll"),
+		},
+		{
+			node: NewGlue("neg_fil"),
+		},
+		{
+			node: NewGlue("neg_fill"),
+		},
+		{
+			node: NewGlue("neg_filll"),
+		},
+		{
+			node: NewGlue("empty"),
+		},
+		{
+			node: NewGlue("ss"),
+		},
 	} {
 		t.Run("", func(t *testing.T) {
 			var (

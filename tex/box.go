@@ -7,8 +7,6 @@ package tex
 import (
 	"fmt"
 	"math"
-
-	"golang.org/x/image/font"
 )
 
 const (
@@ -176,16 +174,14 @@ func HBox(w float64) *Box {
 type Char struct {
 	c string
 
-	size   int
-	width  float64
-	height float64
-	depth  float64
+	size    int
+	width   float64
+	height  float64
+	depth   float64
+	metrics Metrics
 
 	be   Backend
-	font struct {
-		font font.Face
-		size float64
-	}
+	font Font
 	dpi  float64
 	math bool
 }
@@ -194,17 +190,27 @@ func NewChar(c string, state State, math bool) *Char {
 	ch := &Char{
 		c:    c,
 		be:   state.Backend(),
+		font: state.Font,
 		dpi:  state.DPI,
 		math: math,
 	}
-	ch.font.font = state.Font
-	ch.font.size = state.FontSize
 	ch.updateMetrics()
 	return ch
 }
 
 func (ch *Char) updateMetrics() {
-	panic("not implemented")
+	ch.metrics = ch.be.Metrics(
+		ch.c, ch.font, ch.dpi,
+		ch.math,
+	)
+	switch ch.c {
+	case " ":
+		ch.width = ch.metrics.Advance
+	default:
+		ch.width = ch.metrics.Width
+	}
+	ch.height = ch.metrics.Iceberg
+	ch.depth = -(ch.metrics.Iceberg - ch.metrics.Height)
 }
 
 func (c *Char) String() string { return c.c }
@@ -214,7 +220,7 @@ func (c *Char) Kerning(next Node) float64 { panic("not implemented") }
 func (box *Char) Shrink() {
 	box.size--
 	if box.size < numSizeLevels {
-		box.font.size *= shrinkFactor
+		box.font.Size *= shrinkFactor
 		box.width *= shrinkFactor
 		box.height *= shrinkFactor
 		box.depth *= shrinkFactor
@@ -223,7 +229,7 @@ func (box *Char) Shrink() {
 
 func (box *Char) Grow() {
 	box.size++
-	box.font.size *= growFactor
+	box.font.Size *= growFactor
 	box.width *= growFactor
 	box.height *= growFactor
 	box.depth *= growFactor
@@ -1024,16 +1030,6 @@ type hpacker interface {
 type vpacker interface {
 	vpackDims(width, height, depth *float64, stretch, shrink []float64)
 }
-
-type State struct {
-	be       Backend
-	Font     font.Face
-	FontSize float64
-	DPI      float64
-}
-
-func (state State) Backend() Backend      { return state.be }
-func (State) UnderlineThickness() float64 { panic("not implemented") }
 
 type Tree interface {
 	Node

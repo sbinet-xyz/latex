@@ -4,7 +4,13 @@
 
 package tex
 
-import "testing"
+import (
+	"io/ioutil"
+	"testing"
+
+	"github.com/golang/freetype/truetype"
+	"golang.org/x/image/math/fixed"
+)
 
 func TestBox(t *testing.T) {
 	for _, tc := range []struct {
@@ -225,4 +231,42 @@ func TestBox(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestFont(t *testing.T) {
+	//fname := "/usr/share/fonts/TTF/DejaVuSans.ttf"
+	fname := "/usr/lib/python3.8/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf"
+	//fname := "/usr/lib/python3.8/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSansDisplay.ttf"
+	ttf, err := ioutil.ReadFile(fname)
+	if err != nil {
+		t.Fatalf("%+v", err)
+	}
+	ft, err := truetype.Parse(ttf)
+	if err != nil {
+		t.Fatalf("%+v", err)
+	}
+	face := truetype.NewFace(ft, &truetype.Options{
+		Size: 10,
+		DPI:  72,
+		//Hinting: font.HintingFull,
+	})
+	defer face.Close()
+
+	t.Logf("metrics: %#v", face.Metrics())
+	bounds, advance, ok := face.GlyphBounds('A')
+	if !ok {
+		t.Fatalf("could not find glyph bounds")
+	}
+	t.Logf("box: %#v, advance=%#v, ok=%v", bounds, advance, ok)
+	dr, _, _, a, ok := face.Glyph(fixed.P(0, 0), 'A')
+	t.Logf("dr: %#v, adv=%v, ok=%v", dr, float64(a), ok)
+	b2 := ft.Bounds(fixed.Int26_6(ft.FUnitsPerEm()))
+	scale := 10 / float64(ft.FUnitsPerEm())
+	t.Logf("scale: %v", scale)
+	t.Logf("fu/em: %v", ft.FUnitsPerEm())
+	t.Logf("b2: %#v w:%v h:%v", b2, float64(b2.Max.X-b2.Min.X)*scale, scale*float64(b2.Max.Y-b2.Min.Y))
+
+	adv, ok := face.GlyphAdvance('A')
+	t.Logf("adv=%#v, ok=%v", adv, ok)
+	t.Fatalf("bounds=%#v, advance=%#v", bounds, advance)
 }

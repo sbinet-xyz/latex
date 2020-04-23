@@ -27,13 +27,15 @@ func unicodeIndex(v string, math bool) rune {
 		return 0x2212
 	}
 
-	r, ok := tex2uni[strings.Replace(v, `\`, "", 1)]
-	if ok {
-		return r
+	if len(v) == 1 {
+		r, _ := utf8.DecodeRune([]byte(v))
+		if r != utf8.RuneError {
+			return r
+		}
 	}
 
-	r, _ = utf8.DecodeRune([]byte(v))
-	if r != utf8.RuneError {
+	r, ok := tex2uni[strings.Replace(v, `\`, "", 1)]
+	if ok {
 		return r
 	}
 

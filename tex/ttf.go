@@ -12,6 +12,7 @@ import (
 
 	"github.com/golang/freetype/truetype"
 	"golang.org/x/image/font"
+	"golang.org/x/image/font/opentype"
 	"golang.org/x/image/font/sfnt"
 	"golang.org/x/image/math/fixed"
 )
@@ -76,50 +77,62 @@ func (ttf *TTFBackend) Metrics(symbol string, font Font, dpi float64, math bool)
 
 	hinting := hintingNone
 
-	ft, _, rn, symbol, fontSize, slanted := ttf.getGlyph(symbol, font, math)
+	var buf sfnt.Buffer
+
+	ft, sft, rn, symbol, fontSize, slanted := ttf.getGlyph(symbol, font, math)
 	idx := ft.Index(rn)
 
+	gidx, err := sft.GlyphIndex(&buf, rn)
+	if err != nil {
+		panic(err)
+	}
+	symName, err := sft.GlyphName(&buf, gidx)
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("symbol-name: %q", symName)
+
 	fupe := fixed.Int26_6(ft.FUnitsPerEm())
+	log.Printf("fupe: %v|%v | %v", fupe, fupe/2, scale(fixed.I(12), 2048))
 	//	fupe = fixed.Int26_6(0.5 + (font.Size * 64))
 	var glyph truetype.GlyphBuf
-	err := glyph.Load(ft, fupe, idx, hinting)
+	err = glyph.Load(ft, fupe, idx, hinting)
 	if err != nil {
 		panic(err)
 	}
 
-	//	var sbuf sfnt.Buffer
-	//	name, err := sft.Name(&sbuf, sfnt.NameIDPostScript)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	fmt.Printf("postscriptname: %q\n", name)
-	//
-	//	gi, err := sft.GlyphIndex(&sbuf, rn)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	const ppem = 32
-	//	_, err = sft.LoadGlyph(&sbuf, gi, fixed.I(ppem), nil)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//
-	//	sadv, err := sft.GlyphAdvance(&sbuf, gi, fixed.I(ppem), hinting)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	fmt.Printf("sadv: %#v\n", float64(sadv))
+	psname, err := sft.Name(&buf, sfnt.NameIDPostScript)
+	if err != nil {
+		panic(err)
+	}
+	var ppem = int(sft.UnitsPerEm() * 6)
+	_, err = sft.LoadGlyph(&buf, gidx, fixed.I(ppem), nil)
+	if err != nil {
+		panic(err)
+	}
+
+	sadv, err := sft.GlyphAdvance(&buf, gidx, fixed.I(ppem), hinting)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("sadv: %v -> %v -> %v\n", sadv, float64(sadv), float64(sadv)/65536*fontSize/12)
 	//	//	sme, err := sft.Metrics(&sbuf, fixed.I(ppem), hinting)
 	//	//	if err != nil {
 	//	//		panic(err)
 	//	//	}
 	//	//	fmt.Printf("sme: %#v\n", sme)
 	//
-	//	sbds, err := sft.Bounds(&sbuf, fixed.I(ppem), hinting)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	fmt.Printf("sbds: %#v\n", sbds)
+	sfupe := fixed.Int26_6(sft.UnitsPerEm())
+	_, err = sft.LoadGlyph(&buf, gidx, sfupe, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	sbds, err := sft.Bounds(&buf, sfupe, hinting)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("sbds: %#v\n", sbds)
 
 	//fbds := ft.Bounds(fupe)
 	//log.Printf("font: bbox: %v,%v,%v,%v", float64(fbds.Min.X), float64(fbds.Min.Y), float64(fbds.Max.X), float64(fbds.Max.Y))
@@ -143,7 +156,7 @@ func (ttf *TTFBackend) Metrics(symbol string, font Font, dpi float64, math bool)
 		panic(fmt.Errorf("could not load glyph bounds for %q", rn))
 	}
 
-	log.Printf("box: %#v", bds)
+	fmt.Printf("box:  %#v\n", bds)
 	dy := bds.Max.Y + bds.Min.Y
 	xmin := float64(bds.Min.X) / 64
 	ymin := float64(bds.Min.Y-dy) / 64
@@ -152,6 +165,60 @@ func (ttf *TTFBackend) Metrics(symbol string, font Font, dpi float64, math bool)
 	width := xmax - xmin
 	height := ymax - ymin
 	adv := ft.HMetric(fupe*64*6, idx).AdvanceWidth
+
+	//	_, err = sft.LoadGlyph(&buf, gidx, fixed.Int26_6(sft.UnitsPerEm()), nil)
+	//	if err != nil {
+	//		panic(err)
+	//	}
+
+	sface, err := opentype.NewFace(sft, &opentype.FaceOptions{
+		DPI:     72,
+		Size:    fontSize,
+		Hinting: hinting,
+	})
+	if err != nil {
+		panic(err)
+	}
+	defer sface.Close()
+	{
+		bds, _ /*adv*/, ok := sface.GlyphBounds(rn)
+		if !ok {
+			panic(fmt.Errorf("could not load glyph bounds for %q", rn))
+		}
+		fmt.Printf("sbox: %#v\n", bds)
+		met, err := sft.GlyphMetrics(&buf, gidx, fixed.I(ppem), hinting)
+		if err != nil {
+			panic(err)
+		}
+		//fmt.Printf("smet: %#v\n", met)
+		scale := font.Size / 12
+		fmt.Printf("smet: adv=%v, h=%v, w=%v, x=%v,%v y=%v,%v\n",
+			scale*float64(met.AdvanceX)/65536.,
+			scale*float64(met.Height)/65536.,
+			scale*float64(met.Width)/65536.,
+			scale*float64(met.Bounds.Min.X)/65536.,
+			scale*float64(met.Bounds.Max.X)/65536.,
+			scale*float64(met.Bounds.Min.Y)/65536.,
+			scale*float64(met.Bounds.Max.Y)/65536.,
+		)
+		{
+			met, err := sft.GlyphMetrics(&buf, gidx, fixed.I(12), hinting)
+			if err != nil {
+				panic(err)
+			}
+			bnds := met.Bounds
+			fmt.Printf("sbnds: %#v\n", bnds)
+			fmt.Printf("smet: adv=%v, h=%v, w=%v, x=%v,%v y=%v,%v\n",
+				scale*float64(met.AdvanceX)/64,
+				scale*float64(met.Height)/64,
+				scale*float64(met.Width)/64,
+				scale*float64(met.Bounds.Min.X)/64,
+				scale*float64(met.Bounds.Max.X)/64,
+				scale*float64(met.Bounds.Min.Y)/64,
+				scale*float64(met.Bounds.Max.Y)/64,
+			)
+		}
+	}
 
 	// FIXME(sbinet): for certain fonts (with postscript_name == "Cmex10")
 	// offset = height/2 + (font.Size/3*dpi/72)
@@ -172,11 +239,11 @@ func (ttf *TTFBackend) Metrics(symbol string, font Font, dpi float64, math bool)
 	ttf.glyphs[key] = ttfVal{
 		font:       ft,
 		size:       font.Size,
-		postscript: ft.Name(truetype.NameIDPostscriptName),
+		postscript: psname,
 		metrics:    me,
-		symbol:     symbol,
+		symbolName: symName,
 		rune:       rn,
-		glyph:      idx,
+		glyph:      gidx,
 		offset:     offset,
 	}
 	return me
@@ -237,9 +304,9 @@ type ttfVal struct {
 	size       float64
 	postscript string
 	metrics    Metrics
-	symbol     string
+	symbolName string
 	rune       rune
-	glyph      truetype.Index
+	glyph      sfnt.GlyphIndex
 	offset     float64
 }
 

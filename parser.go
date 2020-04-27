@@ -18,6 +18,13 @@ func ParseExpr(x string) (ast.Node, error) {
 	return p.parse()
 }
 
+// ParseFile parses the source code of a single LaTeX source file and returns
+// the corresponding ast.File node. The source code may be provided via the
+// filename of the source file, or via the src parameter.
+func ParseFile(fset *token.FileSet, filename string, src []byte) (ast.File, error) {
+	panic("not implemented")
+}
+
 type state int
 
 const (

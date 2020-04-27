@@ -48,3 +48,12 @@ func (t Token) String() string { return t.Text }
 //
 // Aliased from go/token.Pos
 type Pos = token.Pos
+
+// A FileSet represents a set of source files. Methods of file sets are
+// synchronized; multiple goroutines may invoke them concurrently.
+type FileSet = token.FileSet
+
+// NewFileSet creates a new file set.
+func NewFileSet() *FileSet {
+	return token.NewFileSet()
+}

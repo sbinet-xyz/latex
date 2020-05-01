@@ -12,24 +12,25 @@ import (
 	"github.com/go-latex/latex/drawtex"
 	"github.com/go-latex/latex/font"
 	"github.com/go-latex/latex/internal/tex2unicode"
-	"github.com/golang/freetype/truetype"
 	stdfont "golang.org/x/image/font"
 	"golang.org/x/image/font/gofont/goitalic"
 	"golang.org/x/image/font/gofont/goregular"
+	"golang.org/x/image/font/opentype"
+	"golang.org/x/image/font/sfnt"
 	"golang.org/x/image/math/fixed"
 )
 
 type Backend struct {
 	canvas *drawtex.Canvas
 	glyphs map[ttfKey]ttfVal
-	fonts  map[string]*truetype.Font
+	fonts  map[string]*sfnt.Font
 }
 
 func New(cnv *drawtex.Canvas) *Backend {
 	be := &Backend{
 		canvas: cnv,
 		glyphs: make(map[ttfKey]ttfVal),
-		fonts:  make(map[string]*truetype.Font),
+		fonts:  make(map[string]*sfnt.Font),
 	}
 
 	ftmap := map[string][]byte{
@@ -39,7 +40,7 @@ func New(cnv *drawtex.Canvas) *Backend {
 		"it":      goitalic.TTF,
 	}
 	for k, raw := range ftmap {
-		ft, err := truetype.Parse(raw)
+		ft, err := sfnt.Parse(raw)
 		if err != nil {
 			panic(fmt.Errorf("could not parse %q: %+v", k, err))
 		}
@@ -80,42 +81,74 @@ func (be *Backend) getInfo(symbol string, fnt font.Font, dpi float64, math bool)
 		return val
 	}
 
-	hinting := hintingNone
-	ft, rn, symbol, fontSize, slanted := be.getGlyph(symbol, fnt, math)
-
 	var (
-		postscript = ft.Name(truetype.NameIDPostscriptName)
-		idx        = ft.Index(rn)
+		buf     sfnt.Buffer
+		hinting = hintingNone
 	)
 
-	fupe := fixed.Int26_6(ft.FUnitsPerEm())
-	var glyph truetype.GlyphBuf
-	err := glyph.Load(ft, fupe, idx, hinting)
+	ft, rn, symbol, fontSize, slanted := be.getGlyph(symbol, fnt, math)
+
+	postscript, err := ft.Name(&buf, sfnt.NameIDPostScript)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("could not retrieve postscript name of font: %+v", err))
 	}
 
-	face := truetype.NewFace(ft, &truetype.Options{
+	idx, err := ft.GlyphIndex(&buf, rn)
+	if err != nil {
+		panic(fmt.Errorf("could not retrieve glyph index for %q: %+v", rn, err))
+	}
+
+	symName, err := ft.GlyphName(&buf, idx)
+	if err != nil {
+		panic(fmt.Errorf("could not retrieve glyph name of %q: %+v", rn, err))
+	}
+
+	var ppem = int(ft.UnitsPerEm() * 6)
+	_, err = ft.LoadGlyph(&buf, idx, fixed.I(ppem), nil)
+	if err != nil {
+		panic(fmt.Errorf("could not load glyph %q: %+v", rn, err))
+	}
+
+	adv, err := ft.GlyphAdvance(&buf, idx, fixed.I(ppem), hinting)
+	if err != nil {
+		panic(fmt.Errorf("could not retrieve glyph advance for %q: %+v", rn, err))
+	}
+
+	fupe := fixed.Int26_6(ft.UnitsPerEm())
+	_, err = ft.LoadGlyph(&buf, idx, fupe, nil)
+	if err != nil {
+		panic(fmt.Errorf("could not load glyph %q: %+v", rn, err))
+	}
+
+	//	bds, err := ft.Bounds(&buf, fupe, hinting)
+	//	if err != nil {
+	//		panic(fmt.Errorf("could not load glyph bounds for %q: %+v", rn, err))
+	//	}
+
+	face, err := opentype.NewFace(ft, &opentype.FaceOptions{
 		DPI:     72,
 		Size:    fontSize,
 		Hinting: hinting,
 	})
+	if err != nil {
+		panic(fmt.Errorf("could not create font face for glyph %q: %+v", rn, err))
+	}
 	defer face.Close()
 
-	bds, _ /*adv*/, ok := face.GlyphBounds(rn)
-	if !ok {
-		panic(fmt.Errorf("could not load glyph bounds for %q", rn))
+	met, err := ft.GlyphMetrics(&buf, idx, fixed.I(12), hinting)
+	if err != nil {
+		panic(err)
 	}
 
-	dy := bds.Max.Y + bds.Min.Y
-	xmin := float64(bds.Min.X) / 64
-	ymin := float64(bds.Min.Y-dy) / 64
-	xmax := float64(bds.Max.X) / 64
-	ymax := float64(bds.Max.Y-dy) / 64
-	width := xmax - xmin
-	height := ymax - ymin
-	hme := ft.HMetric(fupe*64*6, idx)
-	adv := hme.AdvanceWidth
+	var (
+		scale  = fontSize / 12
+		xmin   = scale * float64(met.Bounds.Min.X) / 64
+		xmax   = scale * float64(met.Bounds.Max.X) / 64
+		ymin   = scale * float64(met.Bounds.Min.Y) / 64
+		ymax   = scale * float64(met.Bounds.Max.Y) / 64
+		width  = xmax - xmin
+		height = ymax - ymin
+	)
 
 	offset := 0.0
 	if postscript == "Cmex10" {
@@ -139,7 +172,7 @@ func (be *Backend) getInfo(symbol string, fnt font.Font, dpi float64, math bool)
 		size:       fnt.Size,
 		postscript: postscript,
 		metrics:    me,
-		symbolName: symbol,
+		symbolName: symName,
 		rune:       rn,
 		glyph:      idx,
 		offset:     offset,
@@ -152,11 +185,16 @@ func (be *Backend) XHeight(fnt font.Font, dpi float64) float64 {
 	// FIXME(sbinet): use image/font/{sfnt,openfont} that provide a
 	// font.Metrics value with XHeight correctly filled
 	ft := be.getFont(fnt.Type)
-	face := truetype.NewFace(ft, &truetype.Options{
+	face, err := opentype.NewFace(ft, &opentype.FaceOptions{
 		DPI:     dpi,
 		Size:    fnt.Size,
 		Hinting: stdfont.HintingNone,
 	})
+	if err != nil {
+		panic(fmt.Errorf("could not open font face for font=%s,%g,%s: %+v",
+			fnt.Name, fnt.Size, fnt.Type, err,
+		))
+	}
 	defer face.Close()
 
 	return float64(face.Metrics().XHeight) / 64
@@ -167,7 +205,7 @@ const (
 	hintingFull = stdfont.HintingFull
 )
 
-func (be *Backend) getGlyph(symbol string, font font.Font, math bool) (*truetype.Font, rune, string, float64, bool) {
+func (be *Backend) getGlyph(symbol string, font font.Font, math bool) (*sfnt.Font, rune, string, float64, bool) {
 	var (
 		fontType = font.Type
 		idx      = tex2unicode.Index(symbol, math)
@@ -202,7 +240,7 @@ func (*Backend) isSlanted(symbol string) bool {
 	}
 }
 
-func (be *Backend) getFont(fontType string) *truetype.Font {
+func (be *Backend) getFont(fontType string) *sfnt.Font {
 	return be.fonts[fontType]
 }
 
@@ -222,8 +260,14 @@ func (be *Backend) Kern(ft1 font.Font, sym1 string, ft2 font.Font, sym2 string, 
 		const math = true
 		info1 := be.getInfo(sym1, ft1, dpi, math)
 		info2 := be.getInfo(sym1, ft2, dpi, math)
-		scale := fixed.Int26_6(info1.font.FUnitsPerEm())
-		k := info1.font.Kern(scale, info1.glyph, info2.glyph)
+		scale := fixed.Int26_6(info1.font.UnitsPerEm())
+		var buf sfnt.Buffer
+		k, err := info1.font.Kern(&buf, info1.glyph, info2.glyph, scale, hintingNone)
+		if err != nil {
+			panic(fmt.Errorf("could not compute kerning for %q/%q: %+v",
+				sym1, sym2, err,
+			))
+		}
 		return float64(k) / 64
 	}
 	return 0
@@ -236,13 +280,13 @@ type ttfKey struct {
 }
 
 type ttfVal struct {
-	font       *truetype.Font
+	font       *sfnt.Font
 	size       float64
 	postscript string
 	metrics    font.Metrics
 	symbolName string
 	rune       rune
-	glyph      truetype.Index
+	glyph      sfnt.GlyphIndex
 	offset     float64
 }
 

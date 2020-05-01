@@ -9,12 +9,12 @@ import (
 	"fmt"
 	"unicode"
 
+	"github.com/go-fonts/latin-modern/lmroman12italic"
+	"github.com/go-fonts/latin-modern/lmroman12regular"
 	"github.com/go-latex/latex/drawtex"
 	"github.com/go-latex/latex/font"
 	"github.com/go-latex/latex/internal/tex2unicode"
 	stdfont "golang.org/x/image/font"
-	"golang.org/x/image/font/gofont/goitalic"
-	"golang.org/x/image/font/gofont/goregular"
 	"golang.org/x/image/font/opentype"
 	"golang.org/x/image/font/sfnt"
 	"golang.org/x/image/math/fixed"
@@ -34,10 +34,10 @@ func New(cnv *drawtex.Canvas) *Backend {
 	}
 
 	ftmap := map[string][]byte{
-		"default": goregular.TTF,
-		"regular": goregular.TTF,
-		"rm":      goregular.TTF,
-		"it":      goitalic.TTF,
+		"default": lmroman12regular.TTF,
+		"regular": lmroman12regular.TTF,
+		"rm":      lmroman12regular.TTF,
+		"it":      lmroman12italic.TTF,
 	}
 	for k, raw := range ftmap {
 		ft, err := sfnt.Parse(raw)

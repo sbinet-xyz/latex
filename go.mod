@@ -10,3 +10,5 @@ require (
 	github.com/jung-kurt/gofpdf v1.16.2
 	golang.org/x/image v0.0.0-20200430140353-33d19683fad8
 )
+
+replace golang.org/x/image => /home/binet/work/gonum/src/golang.org/x/image
